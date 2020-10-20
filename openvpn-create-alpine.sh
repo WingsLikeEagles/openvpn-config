@@ -10,21 +10,47 @@ die() {
   echo -e '\e[1;31m'$1'\e[m'; exit 1;
 }
 
+error() {
+  echo -e '\e[1;31m'$1'\e[m';
+}
+
 # Checking basics (root, tunnel device, openvpn...)
 if [[ $(id -g) != "0" ]] ; then
-    die "❯❯❯ Script must be run as root."
+  die "❯❯❯ Script must be run as root."
 fi
+
+
+# Check for OpenVPN and if it's starting at boot
+apk info | grep -v "-" | grep "openvpn" > /dev/null 2>&1
+if [[ $? -eq 0 ]]; then
+  ok "❯❯❯ OpenVPN is already installed."
+  rc-status default | grep openvpn
+  if [[ $? -eq 0 ]]; then
+    ok "❯❯❯ OpenVPN set to run automatically at boot time."
+  else
+    rc-update add openvpn default
+  fi
+else
+  apk add openvpn
+  rc-update add openvpn default
+fi
+
+# Check if the tun device and ipv4.ip_forward is configured
+if [[  ! -e /dev/net/tun ]] ; then
+  error "❯❯❯ TUN/TAP device is not available. Configuring..."
+  modprobe tun
+  echo "tun" >> /etc/modules-load.d/tun.conf
+  echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.d/ipv4.conf
+  sysctl -p /etc/sysctl.d/ipv4.conf
+  if [[  ! -e /dev/net/tun ]] ; then
+    ok "❯❯❯ TUN Device installed."
+else
+  ok "❯❯❯ TUN Device is ok."
+  if 
+fi
+
 
 ### Fix below here!!!
-if [[  ! -e /dev/net/tun ]] ; then
-    die "❯❯❯ TUN/TAP device is not available."
-fi
-
-dpkg -l openvpn > /dev/null 2>&1
-if [[ $? -eq 0 ]]; then
-    die "❯❯❯ OpenVPN is already installed."
-fi
-
 # Install openvpn
 ok "❯❯❯ apt-get update"
 apt-get update -q > /dev/null 2>&1
