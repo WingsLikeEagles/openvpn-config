@@ -16,7 +16,7 @@ error() {
 
 
 # Checking basics (root, tunnel device, openvpn...)
-if [[ $(id -g) != "0" ]] ; then
+if [[ $(id -g) != "0" ]]; then
   die "❯❯❯ Script must be run as root."
 fi
 
@@ -37,14 +37,15 @@ else
 fi
 
 # Check if the tun device and ipv4.ip_forward is configured
-if [[  ! -e /dev/net/tun ]] ; then
+if [[ ! -e /dev/net/tun ]]; then
   error "❯❯❯ TUN/TAP device is not available. Configuring..."
   modprobe tun
   echo "tun" >> /etc/modules-load.d/tun.conf
   echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.d/ipv4.conf
   sysctl -p /etc/sysctl.d/ipv4.conf
-  if [[  ! -e /dev/net/tun ]] ; then
+  if [[ ! -e /dev/net/tun ]]; then
     ok "❯❯❯ TUN Device installed."
+  fi
 else
   ok "❯❯❯ TUN Device is ok."
   grep -q "net.ipv4.ip_forward = 1" /etc/sysctl.d/ipv4.conf
@@ -54,7 +55,7 @@ else
     error "❯❯❯  IPv4 Forwarding is not set.  Setting..."
     echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.d/ipv4.conf
     sysctl -p /etc/sysctl.d/ipv4.conf
-    if [[  ! -e /dev/net/tun ]] ; then
+    if [[ ! -e /dev/net/tun ]]; then
       ok "❯❯❯ TUN Device installed."
     else
       die "❯❯❯ Failed to install TUN Device."
