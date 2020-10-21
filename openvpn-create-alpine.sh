@@ -46,22 +46,28 @@ if [[  ! -e /dev/net/tun ]] ; then
     ok "❯❯❯ TUN Device installed."
 else
   ok "❯❯❯ TUN Device is ok."
-  if 
+  grep -q "net.ipv4.ip_forward = 1" /etc/sysctl.d/ipv4.conf
+  if [[ $? -eq 0 ]]; then
+    ok "❯❯❯ IPv4 Forwarding is on."
+  else
+    error "❯❯❯  IPv4 Forwarding is not set.  Setting..."
+    echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.d/ipv4.conf
+    sysctl -p /etc/sysctl.d/ipv4.conf
+    if [[  ! -e /dev/net/tun ]] ; then
+      ok "❯❯❯ TUN Device installed."
+    else
+      die "❯❯❯ Failed to install TUN Device."
+    fi
+  fi
 fi
-
-
-### Fix below here!!!
-# Install openvpn
-ok "❯❯❯ apt-get update"
-apt-get update -q > /dev/null 2>&1
-ok "❯❯❯ apt-get install openvpn curl openssl"
-apt-get install -qy openvpn curl > /dev/null 2>&1
 
 # IP Address
 SERVER_IP=$(curl ipv4.icanhazip.com)
 if [[ -z "${SERVER_IP}" ]]; then
     SERVER_IP=$(ip a | awk -F"[ /]+" '/global/ && !/127.0/ {print $3; exit}')
 fi
+
+
 
 # Generate CA Config
 ok "❯❯❯ Generating CA Config"
@@ -74,10 +80,10 @@ echo 01 > /etc/openvpn/ca.srl
 
 # Generate Server Config
 ok "❯❯❯ Generating Server Config"
-openssl genrsa -out /etc/openvpn/server-key.pem 2048 > /dev/null 2>&1
-chmod 600 /etc/openvpn/server-key.pem
-openssl req -new -key /etc/openvpn/server-key.pem -out /etc/openvpn/server-csr.pem -subj /CN=OpenVPN/ > /dev/null 2>&1
-openssl x509 -req -in /etc/openvpn/server-csr.pem -out /etc/openvpn/server-cert.pem -CA /etc/openvpn/ca.pem -CAkey /etc/openvpn/ca-key.pem -days 365 > /dev/null 2>&1
+openssl genrsa -out /etc/openvpn/${HOSTNAME}-key.pem 2048 > /dev/null 2>&1
+chmod 600 /etc/openvpn/${HOSTNAME}-key.pem
+openssl req -new -key /etc/openvpn/${HOSTNAME}-key.pem -out /etc/openvpn/${HOSTNAME}-csr.pem -subj /CN=OpenVPN/ > /dev/null 2>&1
+openssl x509 -req -in /etc/openvpn/${HOSTNAME}-csr.pem -out /etc/openvpn/${HOSTNAME}-cert.pem -CA /etc/openvpn/ca.pem -CAkey /etc/openvpn/ca-key.pem -days 365 > /dev/null 2>&1
 
 cat > /etc/openvpn/udp1194.conf < /dev/null 2>&1
 chmod 600 /etc/openvpn/client-key.pem
