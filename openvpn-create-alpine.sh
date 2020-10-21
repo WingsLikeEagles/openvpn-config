@@ -14,6 +14,7 @@ error() {
   echo -e '\e[1;31m'$1'\e[m';
 }
 
+
 # Checking basics (root, tunnel device, openvpn...)
 if [[ $(id -g) != "0" ]] ; then
   die "❯❯❯ Script must be run as root."
@@ -67,8 +68,6 @@ if [[ -z "${SERVER_IP}" ]]; then
     SERVER_IP=$(ip a | awk -F"[ /]+" '/global/ && !/127.0/ {print $3; exit}')
 fi
 
-
-
 # Generate CA Config
 ok "❯❯❯ Generating CA Config"
 openssl dhparam -out /etc/openvpn/dh.pem 2048 > /dev/null 2>&1
@@ -90,16 +89,9 @@ chmod 600 /etc/openvpn/client-key.pem
 openssl req -new -key /etc/openvpn/client-key.pem -out /etc/openvpn/client-csr.pem -subj /CN=OpenVPN-Client/ > /dev/null 2>&1
 openssl x509 -req -in /etc/openvpn/client-csr.pem -out /etc/openvpn/client-cert.pem -CA /etc/openvpn/ca.pem -CAkey /etc/openvpn/ca-key.pem -days 36525 > /dev/null 2>&1
 
-cat > /etc/openvpn/client.ovpn <
-$(cat /etc/openvpn/client-key.pem)
-
-
-$(cat /etc/openvpn/client-cert.pem)
-
-
-$(cat /etc/openvpn/ca.pem)
-
-EOF
+cat > /etc/openvpn/client.ovpn < /etc/openvpn/client-key.pem
+cat >> /etc/openvpn/client.ovpn < /etc/openvpn/client-cert.pem
+cat >> /etc/openvpn/client.ovpn < /etc/openvpn/ca.pem
 
 # Iptables
 if [[ ! -f /proc/user_beancounters ]]; then
@@ -117,5 +109,4 @@ cat > /etc/network/if-up.d/iptables < /proc/sys/net/ipv4/ip_forward
 ok "❯❯❯ service openvpn restart"
 service openvpn restart > /dev/null 2>&1
 ok "❯❯❯ Your client config is available at /etc/openvpn/client.ovpn"
-ok "❯❯❯ All done!"</pre>
-
+ok "❯❯❯ All done!"
